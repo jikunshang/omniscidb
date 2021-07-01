@@ -198,6 +198,19 @@ const int8_t* ColumnFetcher::getOneTableColumnFragment(
     const Data_Namespace::MemoryLevel memory_level,
     const int device_id,
     DeviceAllocator* allocator) const {
+  // TODO: refactor
+  const auto& cat = *executor_->getCatalog();
+
+  VLOG(2) << "DEBUG LOG we are fetching column table: " << table_id
+          << " frag: " << frag_id << " col:" << col_id;
+  Data_Namespace::DataMgr* dataMgr = &cat.getDataMgr();
+  auto data_provider = dataMgr->getDataProvider();
+  if (data_provider) {
+    int32_t my_table_id = data_provider->getTableId();
+    int32_t my_fragment_id = data_provider->getFragmentId();
+    VLOG(2) << "DataProvider table: " << my_table_id << " fragment: " << my_fragment_id;
+  }
+
   static std::mutex varlen_chunk_mutex;  // TODO(alex): remove
   static std::mutex chunk_list_mutex;
   const auto fragments_it = all_tables_fragments.find(table_id);
@@ -211,7 +224,6 @@ const int8_t* ColumnFetcher::getOneTableColumnFragment(
   auto chunk_meta_it = fragment.getChunkMetadataMap().find(col_id);
   CHECK(chunk_meta_it != fragment.getChunkMetadataMap().end());
   CHECK(table_id > 0);
-  const auto& cat = *executor_->getCatalog();
   auto cd = get_column_descriptor(col_id, table_id, cat);
   CHECK(cd);
   const auto col_type =
