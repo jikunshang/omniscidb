@@ -45,4 +45,22 @@ class FileCiderDataProvider : public CiderDataProvider {
   std::string file_name_;
 };
 
+// For this provider, it can provide target buffer directly, ColumnFetcher just need do a
+// simple convert. User need guarantee buffers are valid.
+// This will only provide multi chunk buffers from one fragment in one table
+class BufferCiderDataProvider : public CiderDataProvider {
+ public:
+  BufferCiderDataProvider(int32_t table_id,
+                     int32_t fragment_id,
+                     const std::vector<int8_t*>& buffers,
+                     const int32_t num_rows)
+      : CiderDataProvider(table_id, fragment_id), buffers_(buffers), num_rows_(num_rows){};
+  std::vector<int8_t*> getBuffers(){return buffers_;};
+  int32_t getNumRows(){return num_rows_;};
+
+ protected:
+  std::vector<int8_t*> buffers_;
+  int32_t num_rows_;
+};
+
 #endif
