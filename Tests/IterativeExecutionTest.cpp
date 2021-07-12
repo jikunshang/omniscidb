@@ -68,7 +68,6 @@ TargetValue run_simple_agg_itr(const std::string& query_str,
   std::vector<int8_t*> buffers;
   int32_t buffer0[20] = {10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
                          50, 50, 50, 50, 50, 0,  10, 20, 30, 40};
-  LOG(INFO) << "pointer addr is " << (long)buffer0;
   buffers.push_back((int8_t*)buffer0);
   auto dp = std::make_shared<BufferCiderDataProvider>(9, 0, buffers, 20);
   // std::shared_ptr<CiderDataProvider> dp = nullptr;
