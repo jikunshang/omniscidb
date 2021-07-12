@@ -18,6 +18,8 @@
 
 #include "Logger/Logger.h"
 
+#include "../QueryEngine/CiderResultProvider.h"
+#include "../QueryEngine/CiderArrowResultProvider.h"
 #include "../QueryEngine/Descriptors/RelAlgExecutionDescriptor.h"
 #include "../QueryEngine/Execute.h"
 #include "../QueryRunner/QueryRunner.h"
@@ -65,14 +67,19 @@ TargetValue run_simple_agg_itr(const std::string& query_str,
   // it's very tricky since we didn't know the database ID
   // auto dp = std::make_shared<CiderDataProvider>(9, 0);
   std::shared_ptr<CiderDataProvider> dp = nullptr;
+  auto rp = std::make_shared<CiderArrowResultProvider>();
   auto res_itr = QR::get()->ciderExecute(query_str,
                                          dt,
                                          /*hoist_literals=*/true,
                                          /*allow_loop_joins=*/false,
                                          /*just_explain=*/false,
-                                         dp);
+                                         dp,
+                                         rp);
   auto res = res_itr->next(/* dummy size = */ 100);
   auto crt_row = res->getRows()->getNextRow(true, true);
+  std::shared_ptr<arrow::RecordBatch> record_batch =
+      std::any_cast<std::shared_ptr<arrow::RecordBatch>>(rp->convert());
+  CHECK_EQ(size_t(1), record_batch->num_rows()) << query_str;
   CHECK_EQ(size_t(1), crt_row.size()) << query_str;
   return crt_row[0];
 }
