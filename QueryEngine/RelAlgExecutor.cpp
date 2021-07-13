@@ -2853,6 +2853,62 @@ inline bool can_use_bump_allocator(const RelAlgExecutionUnit& ra_exe_unit,
 
 }  // namespace
 
+namespace cider{
+  // how to build such table info???
+std::vector<InputTableInfo> cider_get_table_infos() {
+  int table_id = 9;
+  int fragment_id = 0;
+  int total_num_tuples = 20;
+
+  // ChunkMetadata : SQLTypeInfo, size_t numBytes, size_t numElements, ChunkStats
+  // and need fillChunkStats min/max/hasNull
+  SQLTypes sqlTypes = SQLTypes::kINT;
+  SQLTypeInfo sqlTypeInfo(sqlTypes);
+  
+  auto chunkMetadata0 = std::make_shared<ChunkMetadata>();
+  chunkMetadata0->sqlType = sqlTypeInfo;
+  chunkMetadata0->numElements = total_num_tuples;
+  chunkMetadata0->numBytes = total_num_tuples * 4;
+
+  auto chunkMetadata1 = std::make_shared<ChunkMetadata>();
+  chunkMetadata1->sqlType = sqlTypeInfo;
+  chunkMetadata1->numElements = total_num_tuples;
+  chunkMetadata1->numBytes = total_num_tuples * 4;
+
+  // FragmentInfo needs such info
+  //   int fragmentId;
+  //   size_t shadowNumTuples;
+  //   std::vector<int> deviceIds;
+  //   int physicalTableId;
+  //   int shard;
+  //   ChunkMetadataMap shadowChunkMetadataMap;
+  //   mutable ResultSet* resultSet;
+  //   mutable std::shared_ptr<std::mutex> resultSetMutex
+  // one fragment may have multiple chunkMetadata
+  Fragmenter_Namespace::FragmentInfo fragmentInfo0;
+  fragmentInfo0.fragmentId = fragment_id;
+  fragmentInfo0.shadowNumTuples = total_num_tuples;
+  fragmentInfo0.setPhysicalNumTuples(total_num_tuples);
+  fragmentInfo0.deviceIds.resize(3); // based on memory level, if you have multiple GPU, you need do some load balance work.
+  fragmentInfo0.shard = 0;
+  fragmentInfo0.physicalTableId = table_id;
+
+  fragmentInfo0.setChunkMetadata(0, chunkMetadata0);
+  fragmentInfo0.setChunkMetadata(1, chunkMetadata1);
+
+  Fragmenter_Namespace::TableInfo tableInfo;
+  tableInfo.chunkKeyPrefix = std::vector{0, table_id}; // dbId, tableId
+  // one table may have multiple fragment (fragmentInfo)
+  tableInfo.fragments = {fragmentInfo0};
+
+  // may have multi table
+  InputTableInfo inputTableInfo0{table_id, tableInfo};
+
+  return {inputTableInfo0};
+}
+
+}
+
 ExecutionResult RelAlgExecutor::executeWorkUnit(
     const RelAlgExecutor::WorkUnit& work_unit,
     const std::vector<TargetMetaInfo>& targets_meta,
@@ -2902,7 +2958,7 @@ ExecutionResult RelAlgExecutor::executeWorkUnit(
     }
     return result;
   }
-  const auto table_infos = get_table_infos(work_unit.exe_unit, executor_);
+  const auto table_infos = cider::cider_get_table_infos(); //get_table_infos(work_unit.exe_unit, executor_);
 
   auto ra_exe_unit = decide_approx_count_distinct_implementation(
       work_unit.exe_unit, table_infos, executor_, co.device_type, target_exprs_owned_);

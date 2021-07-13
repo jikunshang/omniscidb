@@ -152,6 +152,7 @@ void QueryFragmentDescriptor::buildFragmentPerKernelForTable(
     }
 
     const auto& fragment = (*fragments)[i];
+    LOG(INFO) << "try skip Fragment";
     const auto skip_frag = executor->skipFragment(
         table_desc, fragment, ra_exe_unit.simple_quals, frag_offsets, i);
     if (skip_frag.first) {

@@ -3513,6 +3513,8 @@ std::tuple<bool, int64_t, int64_t> get_hpt_overflow_underflow_safe_scaled_values
 bool Executor::isFragmentFullyDeleted(
     const int table_id,
     const Fragmenter_Namespace::FragmentInfo& fragment) {
+    return false;
+
   // Skip temporary tables
   if (table_id < 0) {
     return false;
