@@ -66,9 +66,14 @@ TargetValue run_simple_agg_itr(const std::string& query_str,
                                const ExecutorDeviceType dt) {
   // it's very tricky since we didn't know the database ID
   std::vector<int8_t*> buffers;
-  int32_t buffer0[20] = {10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+  int64_t buffer0[20] = {10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+                         10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
+  int32_t buffer1[20] = {10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
                          50, 50, 50, 50, 50, 0,  10, 20, 30, 40};
-  buffers.push_back((int8_t*)buffer0);
+  buffers.resize(9);  // we have 9 columns total 
+  buffers[0] = (int8_t*)buffer0;
+  buffers[1] = (int8_t*)buffer1;
+
   auto dp = std::make_shared<BufferCiderDataProvider>(9, 0, buffers, 20);
   // std::shared_ptr<CiderDataProvider> dp = nullptr;
   auto rp = std::make_shared<CiderArrowResultProvider>();
@@ -311,6 +316,7 @@ TEST_F(SingleTableTestEnv, IterativeExecution) {
                                               run_sql_execute_iterator_test,
                                               "test_parallel",
                                               "WHERE i32 < 50",
+                                              //"WHERE i32 < 50 and i64 > 0",
                                               15,
                                               dt));
         }
