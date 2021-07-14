@@ -32,6 +32,7 @@ add_executable(DiskCacheQueryTest DiskCacheQueryTest.cpp)
 add_executable(CachingFileMgrTest CachingFileMgrTest.cpp)
 add_executable(JSONTest JSONTest.cpp)
 add_executable(TestOModuler TestOModuler.cpp)
+add_executable(testEntry testEntry.cpp)
 
 if(ENABLE_CUDA)
   message(DEBUG "Tests CUDA_COMPILATION_ARCH: ${CUDA_COMPILATION_ARCH}")
@@ -206,6 +207,7 @@ target_link_libraries(CachingFileMgrTest gtest Logger Shared DataMgr OSDependent
 target_link_libraries(LoadTableTest ${THRIFT_HANDLER_TEST_LIBRARIES})
 target_link_libraries(JSONTest gtest Logger Shared)
 target_link_libraries(TestOModuler gtest  Logger Shared CIDER ${EXECUTE_TEST_LIBS})
+target_link_libraries(testEntry  Logger Shared CIDER ${EXECUTE_TEST_LIBS})
 
 if(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
   target_link_libraries(UdfTest gtest ${EXECUTE_TEST_LIBS})

@@ -25,10 +25,10 @@
 #include "Logger/Logger.h"
 #include "Parser/ParserWrapper.h"
 #include "Parser/parser.h"
-#include "QueryEngine/RelAlgExecutor.h"
 #include "QueryEngine/CalciteAdapter.h"
 #include "QueryEngine/ExtensionFunctionsWhitelist.h"
 #include "QueryEngine/QueryDispatchQueue.h"
+#include "QueryEngine/RelAlgExecutor.h"
 #include "QueryEngine/TableFunctions/TableFunctionsFactory.h"
 #include "QueryEngine/ThriftSerializers.h"
 #include "Shared/StringTransform.h"
@@ -691,15 +691,19 @@ std::shared_ptr<ExecutionResult> QueryRunner::runSelectQueryByIterator(
         co = CompilationOptions::defaults(co.device_type);
         co.opt_level = ExecutorOptLevel::LoopStrengthReduction;
         auto calcite_mgr = cat.getCalciteMgr();
-        const auto query_ra = calcite_mgr
-                                  ->process(query_state->createQueryStateProxy(),
-                                            pg_shim(query_str),
-                                            {},
-                                            true,
-                                            false,
-                                            g_enable_calcite_view_optimize,
-                                            true)
-                                  .plan_result;
+        const std::string exec_ra_prefix = "execute relalg";
+        const bool use_calcite = !boost::starts_with(query_str, exec_ra_prefix);
+        const auto query_ra =
+            use_calcite ? calcite_mgr
+                              ->process(query_state->createQueryStateProxy(),
+                                        pg_shim(query_str),
+                                        {},
+                                        true,
+                                        false,
+                                        g_enable_calcite_view_optimize,
+                                        true)
+                              .plan_result
+                        : boost::trim_copy(query_str.substr(exec_ra_prefix.size()));
         auto ra_executor = RelAlgExecutor(executor.get(), cat, query_ra);
         const auto& query_hints = ra_executor.getParsedQueryHints();
         const bool cpu_mode_enabled = query_hints.isHintRegistered(QueryHint::kCpuMode);
@@ -860,8 +864,8 @@ bool CiderResultIterator::hasMoreDataLeft(size_t required_size) {
 }
 
 std::shared_ptr<CiderResultProvider> CiderResultIterator::next(size_t required_size) {
-  //FIXME what to pass in?
-  if(hasMoreDataLeft(required_size)) {
+  // FIXME what to pass in?
+  if (hasMoreDataLeft(required_size)) {
     size_t return_data_size = std::min(remaining_size_, required_size);
     rp_->next(required_size);
     return rp_;
