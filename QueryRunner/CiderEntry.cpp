@@ -7,6 +7,10 @@
 #include "Logger/Logger.h"
 #include "QueryRunner/QueryRunner.h"
 
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
 using QR = QueryRunner::QueryRunner;
 
 namespace util {
@@ -38,6 +42,51 @@ void build_table(const std::string& table_name, std::string& table_schema) {
   run_ddl_statement("CREATE TABLE " + table_name + " " + table_schema);
 }
 
+std::string type_convertor(std::string in) {
+  if (in.compare("int") == 0)
+    return "INT";
+  if (in.compare("long") == 0)
+    return "BIGINT";
+  if (in.compare("short") == 0)
+    return "SMALLINT";
+  if (in.compare("byte") == 0)
+    return "TINYINT";
+  if (in.compare("bool") == 0)
+    return "BOOLEAN";
+  if (in.compare("float") == 0)
+    return "FLOAT";
+  if (in.compare("double") == 0)
+    return "DOUBLE";
+  LOG(WARNING) << "Type " << in << "not support yet!";
+  return "";
+}
+
+std::string parse_schema(std::string json_schema) {
+  rapidjson::Document d;
+  if (d.Parse(json_schema).HasParseError() || !d.HasMember("Columns")) {
+    LOG(ERROR) << "invalid json for schema!";
+  }
+  const rapidjson::Value& columns = d["Columns"];
+  std::string schema;
+  for (rapidjson::Value::ConstValueIterator v_iter = columns.Begin();
+       v_iter != columns.End();
+       ++v_iter) {
+    const rapidjson::Value& field = *v_iter;
+    for (rapidjson::Value::ConstMemberIterator m_iter = field.MemberBegin();
+         m_iter != field.MemberEnd();
+         ++m_iter) {
+      const char* col_name = m_iter->name.GetString();
+      const char* col_type = m_iter->value.GetString();
+      schema += std::string(col_name) + " " + type_convertor(col_type) + ",";
+    }
+  }
+  // remove last ","
+  schema = schema.substr(0, schema.size() - 1);
+  schema = "( " + schema + " );";
+
+  return schema;
+}
+
 }  // namespace util
 
 CiderEntry::CiderEntry() {
@@ -59,7 +108,8 @@ CiderEntry::CiderEntry() {
 void CiderEntry::build_table(const std::string& table_name,
                              const std::string& table_schema) {
   table_name_ = table_name;
-  table_schema_ = table_schema;
+  table_schema_ = util::parse_schema(table_schema);
+  LOG(INFO) << "schema is " << table_schema_;
   util::build_table(table_name_, table_schema_);
 }
 

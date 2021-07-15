@@ -11,17 +11,14 @@ int main(int argc, char* argv[]) {
   log_options.max_files_ = 0;  // stderr only by default
   {
     CiderEntry* ciderEntry = new CiderEntry();
-    char* schema_ = R"(
-      (i64 BIGINT,
-       i32 INT,
-       i16 SMALLINT,
-       i8 TINYINT,
-       d DOUBLE,
-       f FLOAT,
-       i1 BOOLEAN) WITH (FRAGMENT_SIZE = 100);
-      )";
+
+    char* schema_ = "{\"Columns\":[{\"c_customer_sk\":\"int\"},{\"c_customer_id\":\"long\"}]}";
     std::string schema(schema_);
-    ciderEntry->build_table("tmp", schema);
+    ciderEntry->build_table("customer", schema);
+
+    // ciderEntry->set_query_info("execute relalg " + query);
+    // ciderEntry->run_query(nullptr, nullptr);
+
     delete ciderEntry;
   }
 
