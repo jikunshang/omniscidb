@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "Logger/Logger.h"
+#include "QueryEngine/CiderArrowResultProvider.h"
 #include "QueryEngine/CiderResultProvider.h"
 #include "QueryEngine/CiderPrestoResultProvider.h"
 #include "QueryEngine/Descriptors/RelAlgExecutionDescriptor.h"
@@ -38,6 +40,11 @@ JNIEXPORT jint JNICALL Java_com_mapd_CiderJNI_processBlocks(JNIEnv* env,
                                                             jlongArray resultValues,
                                                             jlongArray resultNulls,
                                                             jint rowCount) {
+  logger::LogOptions log_options("");
+  log_options.severity_ = logger::Severity::DEBUG4;
+  log_options.severity_clog_ = logger::Severity::DEBUG4;
+  logger::init(log_options);
+
   // new a CiderEntry
   CiderEntry* ciderEntry = new CiderEntry();
   int64_t ciderEntryPtr = reinterpret_cast<int64_t>(ciderEntry);

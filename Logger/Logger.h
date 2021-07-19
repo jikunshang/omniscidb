@@ -121,8 +121,8 @@ class LogOptions {
   // file_name_pattern and symlink are prepended with base_name.
   std::string file_name_pattern_{".{SEVERITY}.%Y%m%d-%H%M%S.log"};
   std::string symlink_{".{SEVERITY}"};
-  Severity severity_{Severity::INFO};
-  Severity severity_clog_{Severity::ERROR};
+  Severity severity_{Severity::DEBUG4};
+  Severity severity_clog_{Severity::DEBUG4};
   Channels channels_;
   bool auto_flush_{true};
   size_t max_files_{100};

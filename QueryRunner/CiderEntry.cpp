@@ -11,6 +11,9 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
+#include <thread>
+#include <chrono>
+
 using QR = QueryRunner::QueryRunner;
 
 namespace util {
@@ -102,7 +105,13 @@ CiderEntry::CiderEntry() {
 
   // call initdb
   system(cmd.c_str());
+  LOG(INFO) << "init db done!";
+
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+
   QR::init(tmp_path_.c_str());
+  LOG(INFO) << "init QR done!";
+
 }
 
 void CiderEntry::build_table(const std::string& table_name,
