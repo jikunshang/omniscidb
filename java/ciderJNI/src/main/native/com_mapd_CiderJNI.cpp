@@ -34,6 +34,14 @@
 
 namespace util {
 
+bool replace(std::string& str, const std::string& from, const std::string& to) {
+  size_t start_pos = str.find(from);
+  if (start_pos == std::string::npos)
+    return false;
+  str.replace(start_pos, from.length(), to);
+  return true;
+}
+
 std::string random_string(std::size_t length) {
   const std::string CHARACTERS =
       "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -51,12 +59,15 @@ std::string random_string(std::size_t length) {
   return random_string;
 }
 
-std::shared_ptr<arrow::Schema> parse_to_schema(const std::string& json_schema) {
+std::pair<std::shared_ptr<arrow::Schema>, std::string> parse_to_schema(
+    const std::string& json_schema) {
   std::vector<std::shared_ptr<arrow::Field>> fields;
+  std::string table_name = "";
   rapidjson::Document d;
   if (d.Parse(json_schema).HasParseError() || !d.HasMember("Columns")) {
     LOG(ERROR) << "invalid json for schema!";
   }
+  table_name = d["Table"].GetString();
   const rapidjson::Value& columns = d["Columns"];
   std::string schema;
   for (rapidjson::Value::ConstValueIterator v_iter = columns.Begin();
@@ -87,17 +98,19 @@ std::shared_ptr<arrow::Schema> parse_to_schema(const std::string& json_schema) {
   }
   std::shared_ptr<arrow::Schema> s = std::make_shared<arrow::Schema>(fields);
 
-  return s;
+  return std::make_pair(s, table_name);
 }
 
 void convertToArrowTable(std::shared_ptr<arrow::Table>& table,
                          int64_t* dataBuffers,
                          int64_t* nullBuffers,
                          const std::string& schema,
-                         int rowCount) {
+                         int rowCount,
+                         std::string& table_name) {
   // todo:: null buffer???
   LOG(INFO) << "start convert " << rowCount;
-  auto s = parse_to_schema(schema);
+  auto [s, table_name_] = parse_to_schema(schema);
+  table_name = table_name_;
   std::vector<std::shared_ptr<arrow::Array>> arrays;
   for (int i = 0; i < s->fields().size(); i++) {
     LOG(INFO) << "convert " << i << " type: " << s->fields()[i]->name();
@@ -201,12 +214,23 @@ JNIEXPORT jint JNICALL Java_com_mapd_CiderJNI_processBlocks(JNIEnv* env,
   std::shared_ptr<arrow::Table> arrowTable;
   const char* schemaPtr = env->GetStringUTFChars(schema, nullptr);
   std::string tableSchema(schemaPtr);
-  util::convertToArrowTable(arrowTable, dataValuesPtr, dataNullsPtr, schemaPtr, rowCount);
-  (*pDbe)->importArrowTable("test", arrowTable);
+  std::string table_name;
+  util::convertToArrowTable(
+      arrowTable, dataValuesPtr, dataNullsPtr, schemaPtr, rowCount, table_name);
+  std::string random_table_name = table_name + util::random_string(10);
 
   const char* sqlPtr = env->GetStringUTFChars(sql, nullptr);
   // std::string queryInfo = "execute relalg " + std::string(sqlPtr);
   std::string queryInfo = std::string(sqlPtr);
+
+  auto ret = util::replace(queryInfo, table_name, random_table_name);
+  if (!ret) {
+    LOG(FATAL) << "table name not match!";
+  }
+  LOG(INFO) << "table " << table_name << "   random " << random_table_name;
+
+  (*pDbe)->importArrowTable(random_table_name, arrowTable);
+
   auto res = (*pDbe)->executeRA(queryInfo);
 
   int count = res->getRowCount();
