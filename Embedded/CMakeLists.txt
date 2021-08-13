@@ -11,6 +11,14 @@ target_link_libraries(EmbeddedDbTest DBEngine)
 add_executable(EmbeddedDbFSITest EmbeddedDbFSITest.cpp)
 target_link_libraries(EmbeddedDbFSITest DBEngine)
 
+add_executable(MultiThreadTest MultiThreadTest.cpp)
+target_link_libraries(MultiThreadTest DBEngine)
+
+add_executable(multiDBE multiDBE.cpp)
+target_link_libraries(multiDBE DBEngine)
+
+add_executable(MergeResultTest MergeResultTest.cpp)
+target_link_libraries(MergeResultTest DBEngine arrow)
 
 set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 # Currently dbe.cpp is generated near dbe.pyx and not in build dir. This could be revised later
