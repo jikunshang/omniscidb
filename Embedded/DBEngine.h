@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include <arrow/table.h>
-#include "DBETypes.h"
 #include <QueryEngine/ResultSet.h>
+#include <arrow/table.h>
+#include <map>
+#include "DBETypes.h"
 
 namespace EmbeddedDatabase {
 
@@ -51,10 +52,14 @@ class DBEngine {
   std::vector<ColumnDetails> getTableDetails(const std::string& table_name);
   bool setDatabase(std::string& db_name);
   bool login(std::string& db_name, std::string& user_name, const std::string& password);
+  std::shared_ptr<std::map<long, std::vector<std::shared_ptr<Cursor>>>> getResultMap() { return resultMap; }
 
  protected:
-  DBEngine() {}
+  DBEngine() {
+    resultMap = std::make_shared<std::map<long, std::vector<std::shared_ptr<Cursor>>>>();
+  }
   DBEngine(const DBEngine&) = delete;
   DBEngine& operator=(const DBEngine&) = delete;
+  std::shared_ptr<std::map<long, std::vector<std::shared_ptr<Cursor>>>> resultMap;
 };
 }  // namespace EmbeddedDatabase

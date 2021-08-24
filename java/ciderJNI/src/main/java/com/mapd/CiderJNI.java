@@ -14,7 +14,7 @@ public class CiderJNI {
     public static native int processBlocks(long dbePtr, String sql, String schema,
                                            long[] dataBuffers, long[] dataNulls,
                                            long[] resultBuffers, long[] resultNulls,
-                                           int rowCount);
+                                           int rowCount, long threadId, int mergeFlag);
 
     public static native long init();
 

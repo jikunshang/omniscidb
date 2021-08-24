@@ -42,7 +42,8 @@ else() # linux
 endif()
 
 file(GLOB JNI_LIB_SRC
-    com_mapd_CiderJNI.cpp)
+    com_mapd_CiderJNI.cpp
+    Utils.cpp)
 
 add_library(ciderjni SHARED ${JNI_LIB_SRC})
 target_link_libraries(ciderjni DBEngine mapd_thrift thrift_handler Catalog QueryState Parser QueryEngine QueryRunner DataMgr Logger ${Arrow_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS} ${TBB_LIBS} Geospatial)

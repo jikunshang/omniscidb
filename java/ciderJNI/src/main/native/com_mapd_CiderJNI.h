@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     com_mapd_CiderJNI
  * Method:    processBlocks
- * Signature: (JLjava/lang/String;Ljava/lang/String;[J[J[J[JI)I
+ * Signature: (JLjava/lang/String;Ljava/lang/String;[J[J[J[JIJI)I
  */
 JNIEXPORT jint JNICALL Java_com_mapd_CiderJNI_processBlocks
-  (JNIEnv *, jclass, jlong, jstring, jstring, jlongArray, jlongArray, jlongArray, jlongArray, jint);
+  (JNIEnv *, jclass, jlong, jstring, jstring, jlongArray, jlongArray, jlongArray, jlongArray, jint, jlong, jint);
 
 /*
  * Class:     com_mapd_CiderJNI
