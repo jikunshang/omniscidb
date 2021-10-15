@@ -800,6 +800,7 @@ class Executor {
 
   std::vector<llvm::Value*> inlineHoistedLiterals();
 
+ public:
   std::tuple<CompilationResult, std::unique_ptr<QueryMemoryDescriptor>> compileWorkUnit(
       const std::vector<InputTableInfo>& query_infos,
       const PlanState::DeletedColumnsMap& deleted_cols_map,
@@ -814,6 +815,7 @@ class Executor {
       const bool has_cardinality_estimation,
       ColumnCacheMap& column_cache,
       RenderInfo* render_info = nullptr);
+ private:
   // Generate code to skip the deleted rows in the outermost table.
   llvm::BasicBlock* codegenSkipDeletedOuterTableRow(
       const RelAlgExecutionUnit& ra_exe_unit,

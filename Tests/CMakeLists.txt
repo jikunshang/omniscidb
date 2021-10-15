@@ -9,6 +9,7 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/Udf/udf_sample.cpp DESTINATION ${CMAKE_BIN
 add_executable(CodeGeneratorTest CodeGeneratorTest.cpp)
 add_executable(ExecuteTest ExecuteTest.cpp ClusterTester.cpp)
 add_executable(CodeGenIRTest CodeGenIRTest.cpp)
+add_executable(CompileWorkUnitTest CompileWorkUnitTest.cpp)
 add_executable(GeospatialTest GeospatialTest.cpp)
 add_executable(RunQueryLoop RunQueryLoop.cpp)
 add_executable(StringDictionaryTest StringDictionaryTest.cpp)
@@ -132,6 +133,7 @@ target_link_libraries(DumpRestoreTest ${EXECUTE_TEST_LIBS})
 target_link_libraries(CodeGeneratorTest ${EXECUTE_TEST_LIBS})
 target_link_libraries(ExecuteTest ${EXECUTE_TEST_LIBS})
 target_link_libraries(CodeGenIRTest ${EXECUTE_TEST_LIBS})
+target_link_libraries(CompileWorkUnitTest ${EXECUTE_TEST_LIBS})
 target_link_libraries(GeospatialTest ${EXECUTE_TEST_LIBS})
 target_link_libraries(RunQueryLoop ${EXECUTE_TEST_LIBS} bcrypt)
 target_link_libraries(ArrowCsvForeignStorageTest gtest ${EXECUTE_TEST_LIBS})
@@ -243,6 +245,7 @@ add_test(AlterTableDdlTest AlterTableDdlTest ${TEST_ARGS})
 add_test(UtilTest UtilTest ${TEST_ARGS})
 add_test(ExecuteTest ExecuteTest ${TEST_ARGS})
 add_test(CodeGenIRTest CodeGenIRTest ${TEST_ARGS})
+add_test(CompileWorkUnitTest CompileWorkUnitTest ${TEST_ARGS})
 add_test(NAME ExecuteTestTemporaryTables COMMAND ExecuteTest ${TEST_ARGS} "--use-temporary-tables")
 add_test(GeospatialTest GeospatialTest ${TEST_ARGS})
 add_test(CodeGeneratorTest CodeGeneratorTest ${TEST_ARGS})
@@ -412,6 +415,7 @@ set(TEST_PROGRAMS
   JSONTest
   DataMgrTest
   CodeGenIRTest
+  CompileWorkUnitTest
 )
 
 if (ENABLE_SYSTEM_TFS)
