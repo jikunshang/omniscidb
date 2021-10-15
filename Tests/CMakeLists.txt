@@ -8,6 +8,7 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/Udf/udf_sample.cpp DESTINATION ${CMAKE_BIN
 
 add_executable(CodeGeneratorTest CodeGeneratorTest.cpp)
 add_executable(ExecuteTest ExecuteTest.cpp ClusterTester.cpp)
+add_executable(CodeGenIRTest CodeGenIRTest.cpp)
 add_executable(GeospatialTest GeospatialTest.cpp)
 add_executable(RunQueryLoop RunQueryLoop.cpp)
 add_executable(StringDictionaryTest StringDictionaryTest.cpp)
@@ -130,6 +131,7 @@ target_link_libraries(TokenCompletionHintsTest token_completion_hints gtest mapd
 target_link_libraries(DumpRestoreTest ${EXECUTE_TEST_LIBS})
 target_link_libraries(CodeGeneratorTest ${EXECUTE_TEST_LIBS})
 target_link_libraries(ExecuteTest ${EXECUTE_TEST_LIBS})
+target_link_libraries(CodeGenIRTest ${EXECUTE_TEST_LIBS})
 target_link_libraries(GeospatialTest ${EXECUTE_TEST_LIBS})
 target_link_libraries(RunQueryLoop ${EXECUTE_TEST_LIBS} bcrypt)
 target_link_libraries(ArrowCsvForeignStorageTest gtest ${EXECUTE_TEST_LIBS})
@@ -240,6 +242,7 @@ add_test(ArrowCsvForeignStorageTest ArrowCsvForeignStorageTest ${TEST_ARGS})
 add_test(AlterTableDdlTest AlterTableDdlTest ${TEST_ARGS})
 add_test(UtilTest UtilTest ${TEST_ARGS})
 add_test(ExecuteTest ExecuteTest ${TEST_ARGS})
+add_test(CodeGenIRTest CodeGenIRTest ${TEST_ARGS})
 add_test(NAME ExecuteTestTemporaryTables COMMAND ExecuteTest ${TEST_ARGS} "--use-temporary-tables")
 add_test(GeospatialTest GeospatialTest ${TEST_ARGS})
 add_test(CodeGeneratorTest CodeGeneratorTest ${TEST_ARGS})
@@ -329,10 +332,10 @@ if("${MAPD_EDITION_LOWER}" STREQUAL "ee")
   endif()
 endif()
 
-find_package(fmt REQUIRED)
-add_executable(ArrowIpcIntegrationTest ArrowIpcIntegrationTest.cpp)
-target_link_libraries(ArrowIpcIntegrationTest gtest fmt::fmt ThriftClient mapd_thrift Logger Shared ${CUDA_LIBRARIES} ${Arrow_LIBRARIES})
-add_test(ArrowIpcIntegrationTest ArrowIpcIntegrationTest ${TEST_ARGS})
+# find_package(fmt REQUIRED)
+# add_executable(ArrowIpcIntegrationTest ArrowIpcIntegrationTest.cpp)
+# target_link_libraries(ArrowIpcIntegrationTest gtest fmt::fmt ThriftClient mapd_thrift Logger Shared ${CUDA_LIBRARIES} ${Arrow_LIBRARIES})
+# add_test(ArrowIpcIntegrationTest ArrowIpcIntegrationTest ${TEST_ARGS})
 
 #parse s3 credentials
 file(READ aws/s3client.conf S3CLIENT_CONF)
@@ -408,6 +411,7 @@ set(TEST_PROGRAMS
   LoadTableTest
   JSONTest
   DataMgrTest
+  CodeGenIRTest
 )
 
 if (ENABLE_SYSTEM_TFS)
@@ -487,4 +491,4 @@ if(ENABLE_DBE)
   add_dependencies(all_tests dbe4py-test)
 endif()
 
-add_subdirectory(ExtensionFunctions/h3lib/)
+# add_subdirectory(ExtensionFunctions/h3lib/)
