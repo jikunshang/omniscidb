@@ -1040,13 +1040,13 @@ class Executor {
                                      JoinColumnSide target_side,
                                      bool extract_only_col_id);
 
- private:
-  std::shared_ptr<CompilationContext> getCodeFromCache(const CodeCacheKey&,
-                                                       const CodeCache&);
-
   std::vector<int8_t> serializeLiterals(
       const std::unordered_map<int, CgenState::LiteralValues>& literals,
       const int device_id);
+
+ private:
+  std::shared_ptr<CompilationContext> getCodeFromCache(const CodeCacheKey&,
+                                                       const CodeCache&);
 
   static size_t align(const size_t off_in, const size_t alignment) {
     size_t off = off_in;

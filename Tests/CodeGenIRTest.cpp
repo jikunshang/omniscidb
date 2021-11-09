@@ -61,14 +61,14 @@ void create_and_populate_data() {
   std::vector<std::string> lineitem_rows;
   // 20 rows
   lineitem_rows.push_back(
-      "114000001,3500852,887,4,31.00,57433.08,0.08,0.05,'N','O','1995-08-26','1995-09-30'"
-      ",'1995-09-25','TAKEBACKRETURN','TRUCK','inalaccounts.blit'");
+      "114000001,3500852,887,4,31.00,57433.08,0.08,0.05,'N','O','1995-08-26','1995-08-26'"
+      ",'1995-08-26','TAKEBACKRETURN','TRUCK','inalaccounts.blit'");
   lineitem_rows.push_back(
-      "114000006,1716871,66896,3,9.00,16990.11,0.04,0.05,'N','F','1995-06-12','1995-05-"
-      "29','1995-06-29','TAKEBACKRETURN','TRUCK','tornis.furiouslydogged'");
+      "114000006,1716871,66896,3,9.00,16990.11,0.04,0.05,'N','F','1995-08-26','1995-08-"
+      "26','1995-08-26','TAKEBACKRETURN','TRUCK','tornis.furiouslydogged'");
   lineitem_rows.push_back(
-      "114000035,2930870,30899,1,11.00,20908.03,0.03,0.08,'R','F','1992-04-10','1992-05-"
-      "14','1992-04-29','NONE','RAIL','xpressaccountsnagentici'");
+      "114000035,2930870,30899,1,11.00,20908.03,0.03,0.08,'R','F','1995-08-26','1995-08-"
+      "27','1995-08-26','NONE','RAIL','xpressaccountsnagentici'");
   lineitem_rows.push_back(
       "114000064,3510290,160308,6,43.00,55905.16,0.01,0.08,'N','O','1996-04-20','1996-04-"
       "08','1996-04-30','COLLECTCOD','RAIL','xfluffilyfuriouslyboldsent'");
@@ -318,11 +318,10 @@ void create_and_populate_PART() {
 
  TEST(TPCH, Q6M) {
    std::string query =
-       "select l_extendedprice, l_discount  from tpch_lineitem where "
-       "l_shipdate >= date '1994-01-01' and l_shipdate < date '1994-01-01' + interval '1' "
-       "year and l_discount between .06 - 0.01 and .06 + 0.01 and l_quantity <24;";
+       "select l_orderkey  from tpch_lineitem where "
+       "l_shipdate >= date '1994-01-01' ;";
    auto res = run_multiple_agg_CPU(query);
-   std::cout << "result have " << res->rowCount() << " rows." << std::endl;
+//   std::cout << "result have " << res->rowCount() << " rows." << std::endl;
  }
 
 // TEST(TPCH, Q1) {
@@ -369,11 +368,11 @@ void create_and_populate_PART() {
 //
 // }
 
-// TEST(TPCH, Q_limit) {
-//   std::string query = "select * from tpch_lineitem limit 11;";
-//   auto res = run_multiple_agg_CPU(query);
-//   std::cout << "result have " << res->rowCount() << " rows." << std::endl;
-// }
+ TEST(TPCH, Q_limit) {
+   std::string query = "select * from tpch_lineitem limit 11;";
+   auto res = run_multiple_agg_CPU(query);
+   std::cout << "result have " << res->rowCount() << " rows." << std::endl;
+ }
 
 int main(int argc, char** argv) {
   std::cout << "Starting CodeGenIRTest" << std::endl;
@@ -425,11 +424,11 @@ int main(int argc, char** argv) {
                      " Currently only supports single node tests.");
   desc.add_options()("use-temporary-tables",
                      "Use temporary tables instead of physical storage.");
-  desc.add_options()("use-tbb",
-                     po::value<bool>(&g_use_tbb_pool)
-                         ->default_value(g_use_tbb_pool)
-                         ->implicit_value(true),
-                     "Use TBB thread pool implementation for query dispatch.");
+//  desc.add_options()("use-tbb",
+//                     po::value<bool>(&g_use_tbb_pool)
+//                         ->default_value(g_use_tbb_pool)
+//                         ->implicit_value(true),
+//                     "Use TBB thread pool implementation for query dispatch.");
   desc.add_options()("use-disk-cache",
                      "Use the disk cache for all tables with minimum size settings.");
 
