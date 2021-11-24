@@ -1,31 +1,18 @@
 #include "TestHelpers.h"
 
+#include "../Cider/CiderExecutionKernel.h"
 #include "../ImportExport/Importer.h"
 #include "../Parser/parser.h"
 #include "../QueryEngine/ArrowResultSet.h"
 #include "../QueryEngine/CgenState.h"
-#include "../QueryEngine/Descriptors/RelAlgExecutionDescriptor.h"
 #include "../QueryEngine/Execute.h"
 #include "../QueryEngine/ExpressionRange.h"
 #include "../QueryEngine/RelAlgExecutionUnit.h"
 #include "../QueryEngine/ResultSetReductionJIT.h"
 #include "../QueryRunner/QueryRunner.h"
-#include "../Shared/DateConverters.h"
-#include "../Shared/StringTransform.h"
-#include "../Shared/scope.h"
-#include "../SqliteConnector/SqliteConnector.h"
-#include "ClusterTester.h"
 #include "DistributedLoader.h"
 
 #include <gtest/gtest.h>
-#include <boost/algorithm/string.hpp>
-#include <boost/any.hpp>
-#include <boost/program_options.hpp>
-
-#include <cmath>
-#include <cstdio>
-#include <string>
-#include <vector>
 
 #ifndef BASE_PATH
 #define BASE_PATH "./tmp"
@@ -161,118 +148,14 @@ void release_output_buf(int64_t** out_buffers) {
   std::free(out_buffers);
 }
 
-class CiderExecutionKernel {
- public:
-  CiderExecutionKernel(std::shared_ptr<Executor> executor) : executor_(executor){};
-
-  void runWithDataMultiFrag(const int8_t*** multi_col_buffers,
-                            const int64_t* num_rows,
-                            int64_t** out,
-                            int32_t* matched_num,
-                            int32_t* err_code) {
-    // build input parameters
-    PlanState::DeletedColumnsMap deleted_cols_map;
-    const uint64_t num_fragments = 1;
-    std::vector<int8_t> literal_vec =
-        executor_->serializeLiterals(compilationResult_.literal_values, 0);
-    uint64_t frag_row_offsets = 0;
-    int32_t max_matched = *num_rows;  // FIXME:
-    int64_t init_agg_value = 0;
-    uint32_t num_tables = 1;  // FIXME: only one table now, what about join
-    int64_t* join_hash_tables_ptr = nullptr;  // FIXME:
-
-    using agg_query = void (*)(const int8_t***,  // col_buffers
-                               const uint64_t*,  // num_fragments
-                               const int8_t*,    // literals
-                               const int64_t*,   // num_rows
-                               const uint64_t*,  // frag_row_offsets
-                               const int32_t*,   // max_matched
-                               int32_t*,         // total_matched
-                               const int64_t*,   // init_agg_value
-                               int64_t**,        // out
-                               int32_t*,         // error_code
-                               const uint32_t*,  // num_tables
-                               const int64_t*);  // join_hash_tables_ptr
-
-    std::shared_ptr<CpuCompilationContext> ccc =
-        std::dynamic_pointer_cast<CpuCompilationContext>(
-            compilationResult_.generated_code);
-    reinterpret_cast<agg_query>(ccc->func())(multi_col_buffers,
-                                             &num_fragments,
-                                             literal_vec.data(),
-                                             num_rows,
-                                             &frag_row_offsets,
-                                             &max_matched,
-                                             matched_num,
-                                             &init_agg_value,
-                                             out,
-                                             err_code,
-                                             &num_tables,
-                                             join_hash_tables_ptr);
-  }
-
-  void runWithData(const int8_t** col_buffers,
-                   const int64_t* num_rows,
-                   int64_t** out,
-                   int32_t* matched_num,
-                   int32_t* err_code) {
-    const int8_t*** multi_col_buffers =
-        (const int8_t***)std::malloc(sizeof(int8_t**) * 1);
-    multi_col_buffers[0] = col_buffers;
-    runWithDataMultiFrag(
-        (const int8_t***)multi_col_buffers, num_rows, out, matched_num, err_code);
-    std::free(multi_col_buffers);
-  }
-
-  void compileWorkUnit(const RelAlgExecutionUnit& ra_exe_unit,
-                       const std::vector<InputTableInfo>& query_infos) {
-    PlanState::DeletedColumnsMap deleted_cols_map;
-    CompilationOptions co = CompilationOptions::defaults(ExecutorDeviceType::CPU);
-    ExecutionOptions eo;
-    CudaMgr_Namespace::CudaMgr* cuda_mgr = nullptr;
-    bool allow_lazy_fetch{false};
-    std::shared_ptr<RowSetMemoryOwner> row_set_mem_owner = nullptr;
-    size_t max_groups_buffer_entry_guess{0};
-    int8_t crt_min_byte_width{MAX_BYTE_WIDTH_SUPPORTED};
-    bool has_cardinality_estimation{false};
-    ColumnCacheMap column_cache;
-    RenderInfo* render_info = nullptr;
-
-    CompilationResult compilation_result;
-    std::unique_ptr<QueryMemoryDescriptor> query_mem_desc;
-
-    std::tie(compilation_result, query_mem_desc) =
-        executor_->compileWorkUnit(query_infos,
-                                   deleted_cols_map,
-                                   ra_exe_unit,
-                                   co,
-                                   eo,
-                                   cuda_mgr,
-                                   allow_lazy_fetch,
-                                   row_set_mem_owner,
-                                   max_groups_buffer_entry_guess,
-                                   crt_min_byte_width,
-                                   has_cardinality_estimation,
-                                   column_cache,
-                                   render_info);
-    compilationResult_ = compilation_result;
-  }
-
- private:
-  std::shared_ptr<Executor> executor_;  // this class hold Executor to call compile and
-                                        // serializeLiterals method, could be removed.
-  CompilationResult compilationResult_;
-};
-
 TEST(APITest, case1) {
-  auto executor = Executor::getExecutor(Executor::UNITARY_EXECUTOR_ID);
-  CiderExecutionKernel kernel(executor);
+  auto kernel = CiderExecutionKernel::create();
 
   // build compile input parameters
   RelAlgExecutionUnit ra_exe_unit = buildFakeRelAlgEU();
   std::vector<InputTableInfo> query_infos = buildQueryInfo();
 
-  kernel.compileWorkUnit(ra_exe_unit, query_infos);
+  kernel->compileWorkUnit(ra_exe_unit, query_infos);
 
   // build data input parameters
   int8_t** col_buffers = build_input_buf();
@@ -281,7 +164,7 @@ TEST(APITest, case1) {
   int32_t matched_num = 0;
   int32_t err_code = 0;
 
-  kernel.runWithData(
+  kernel->runWithData(
       (const int8_t**)col_buffers, &num_rows, out_buffers, &matched_num, &err_code);
 
   // check result
@@ -290,133 +173,6 @@ TEST(APITest, case1) {
   // release buffers
   release_input_buf(col_buffers);
   release_output_buf(out_buffers);
-}
-
-TEST(BuildEU, EU1) {
-  ASSERT_TRUE(true);
-  auto executor = Executor::getExecutor(Executor::UNITARY_EXECUTOR_ID);  // step1
-  CompilationResult compilation_result;
-  std::unique_ptr<QueryMemoryDescriptor> query_mem_desc;
-
-  // needed parameters
-  std::vector<InputTableInfo> query_infos;
-  Fragmenter_Namespace::FragmentInfo fi_0;
-  fi_0.fragmentId = 0;
-  fi_0.shadowNumTuples = 20;
-  fi_0.physicalTableId = 100;
-  fi_0.setPhysicalNumTuples(20);
-
-  Fragmenter_Namespace::TableInfo ti_0;
-  ti_0.fragments = {fi_0};
-  ti_0.setPhysicalNumTuples(20);
-
-  InputTableInfo iti_0{100, ti_0};
-  query_infos.push_back(iti_0);
-
-  PlanState::DeletedColumnsMap deleted_cols_map;
-  CompilationOptions co = CompilationOptions::defaults(ExecutorDeviceType::CPU);
-  ExecutionOptions eo;
-  CudaMgr_Namespace::CudaMgr* cuda_mgr = nullptr;
-  bool allow_lazy_fetch{false};
-  std::shared_ptr<RowSetMemoryOwner> row_set_mem_owner = nullptr;
-  size_t max_groups_buffer_entry_guess{0};
-  int8_t crt_min_byte_width{MAX_BYTE_WIDTH_SUPPORTED};
-  bool has_cardinality_estimation{false};
-  ColumnCacheMap column_cache;
-  RenderInfo* render_info = nullptr;
-
-  RelAlgExecutionUnit ra_exe_unit = buildFakeRelAlgEU();
-
-  // this method will fail currently :(
-  std::tie(compilation_result, query_mem_desc) =  // step 2
-      executor->compileWorkUnit(query_infos,
-                                deleted_cols_map,
-                                ra_exe_unit,
-                                co,
-                                eo,
-                                cuda_mgr,
-                                allow_lazy_fetch,
-                                row_set_mem_owner,
-                                max_groups_buffer_entry_guess,
-                                crt_min_byte_width,
-                                has_cardinality_estimation,
-                                column_cache,
-                                render_info);
-
-  using agg_query = void (*)(const int8_t***,  // col_buffers
-                             const uint64_t*,  // num_fragments
-                             const int8_t*,    // literals
-                             const int64_t*,   // num_rows
-                             const uint64_t*,  // frag_row_offsets
-                             const int32_t*,   // max_matched
-                             int32_t*,         // total_matched
-                             const int64_t*,   // init_agg_value
-                             int64_t**,        // out
-                             int32_t*,         // error_code
-                             const uint32_t*,  // num_tables
-                             const int64_t*);  // join_hash_tables_ptr
-
-  const int8_t*** multi_col_buffer =
-      (const int8_t***)std::malloc(sizeof(int8_t**) * 1);  // we have only one fragment
-
-  int8_t** col_buffer_frag_0 =
-      (int8_t**)std::malloc(sizeof(int8_t*) * 2);  // we have two columns
-  multi_col_buffer[0] = (const int8_t**)col_buffer_frag_0;
-
-  int32_t* date_col_id_0 = (int32_t*)std::malloc(sizeof(int32_t) * 10);
-  int64_t* long_col_id_1 = (int64_t*)std::malloc(sizeof(int64_t) * 10);
-
-  for (int i = 0; i < 5; i++) {
-    date_col_id_0[i] = 8777;
-    long_col_id_1[i] = i;
-  }
-
-  for (int i = 5; i < 10; i++) {
-    date_col_id_0[i] = 8700;
-    long_col_id_1[i] = i;
-  }
-
-  col_buffer_frag_0[0] = reinterpret_cast<int8_t*>(date_col_id_0);
-  col_buffer_frag_0[1] = reinterpret_cast<int8_t*>(long_col_id_1);
-
-  uint64_t num_fragments = 1;
-  std::vector<int8_t> literal_vec =
-      executor->serializeLiterals(compilation_result.literal_values, 0);
-  int8_t* literals = literal_vec.data();
-  int64_t num_rows = 10;
-  uint64_t frag_row_offsets = 0;
-  int32_t max_matched = 10;
-  int32_t total_matched = 0;
-  int64_t init_agg_value = 0;
-  int64_t** out = (int64_t**)std::malloc(sizeof(int64_t**) * 1);
-  int64_t* out_col_0 = (int64_t*)std::malloc(sizeof(int64_t*) * 10);
-  std::memset(out_col_0, 0, sizeof(int64_t*) * 10);
-  out[0] = out_col_0;
-
-  int32_t error_code = 0;
-  uint32_t num_tables = 1;
-  int64_t* join_hash_tables_ptr = nullptr;
-
-  std::shared_ptr<CpuCompilationContext> ccc =
-      std::dynamic_pointer_cast<CpuCompilationContext>(compilation_result.generated_code);
-  reinterpret_cast<agg_query>(ccc->func())(multi_col_buffer,
-                                           &num_fragments,
-                                           literals,
-                                           &num_rows,
-                                           &frag_row_offsets,
-                                           &max_matched,
-                                           &total_matched,
-                                           &init_agg_value,
-                                           out,
-                                           &error_code,
-                                           &num_tables,
-                                           join_hash_tables_ptr);
-
-  std::cout << "total match " << total_matched << " rows, they are ";
-  for (int i = 0; i < total_matched; i++) {
-    std::cout << "row " << out_col_0[i] << ", ";
-  }
-  std::cout << std::endl;
 }
 
 int main(int argc, char** argv) {
