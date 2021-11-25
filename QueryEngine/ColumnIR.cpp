@@ -111,8 +111,9 @@ std::vector<llvm::Value*> CodeGenerator::codegenColVar(const Analyzer::ColumnVar
   const int rte_idx = adjusted_range_table_index(col_var);
   CHECK_LT(static_cast<size_t>(rte_idx), cgen_state_->frag_offsets_.size());
   const auto catalog = executor()->getCatalog();
-//  CHECK(catalog);
   // this if block is checking some geo related column info, skip it.
+  // CHECK(catalog);
+  // if (col_var->get_table_id() > 0) {
   if (false) {
     auto cd = get_column_descriptor(col_id, col_var->get_table_id(), *catalog);
     if (cd->isVirtualCol) {
