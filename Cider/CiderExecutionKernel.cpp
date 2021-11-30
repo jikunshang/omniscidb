@@ -49,13 +49,15 @@ class CiderExecutionKernelImpl : public CiderExecutionKernel {
                             const int64_t* num_rows,
                             int64_t** out,
                             int32_t* matched_num,
-                            int32_t* err_code);
+                            int32_t* err_code,
+                            int64_t* init_agg_vals);
 
   void runWithData(const int8_t** col_buffers,
                    const int64_t* num_rows,
                    int64_t** out,
                    int32_t* matched_num,
-                   int32_t* err_code);
+                   int32_t* err_code,
+                   int64_t* init_agg_vals);
 
   // TODO: remove Omnisci related class/header files, which may cause link issue.
   void compileWorkUnit(const RelAlgExecutionUnit& ra_exe_unit,
@@ -70,7 +72,8 @@ void CiderExecutionKernelImpl::runWithDataMultiFrag(const int8_t*** multi_col_bu
                                                     const int64_t* num_rows,
                                                     int64_t** out,
                                                     int32_t* matched_num,
-                                                    int32_t* err_code) {
+                                                    int32_t* err_code,
+                                                    int64_t* init_agg_vals) {
   // build input parameters
   PlanState::DeletedColumnsMap deleted_cols_map;
   const uint64_t num_fragments = 1;
@@ -78,7 +81,6 @@ void CiderExecutionKernelImpl::runWithDataMultiFrag(const int8_t*** multi_col_bu
       executor_->serializeLiterals(compilationResult_.literal_values, 0);
   uint64_t frag_row_offsets = 0;
   int32_t max_matched = *num_rows;  // FIXME:
-  int64_t init_agg_value = 0;
   uint32_t num_tables = 1;                  // FIXME: only one table now, what about join
   int64_t* join_hash_tables_ptr = nullptr;  // FIXME:
 
@@ -104,7 +106,7 @@ void CiderExecutionKernelImpl::runWithDataMultiFrag(const int8_t*** multi_col_bu
                                            &frag_row_offsets,
                                            &max_matched,
                                            matched_num,
-                                           &init_agg_value,
+                                           init_agg_vals,
                                            out,
                                            err_code,
                                            &num_tables,
@@ -115,11 +117,12 @@ void CiderExecutionKernelImpl::runWithData(const int8_t** col_buffers,
                                            const int64_t* num_rows,
                                            int64_t** out,
                                            int32_t* matched_num,
-                                           int32_t* err_code) {
+                                           int32_t* err_code,
+                                           int64_t* init_agg_vals) {
   const int8_t*** multi_col_buffers = (const int8_t***)std::malloc(sizeof(int8_t**) * 1);
   multi_col_buffers[0] = col_buffers;
   runWithDataMultiFrag(
-      (const int8_t***)multi_col_buffers, num_rows, out, matched_num, err_code);
+      (const int8_t***)multi_col_buffers, num_rows, out, matched_num, err_code, init_agg_vals);
   std::free(multi_col_buffers);
 }
 
@@ -164,19 +167,21 @@ void CiderExecutionKernel::runWithDataMultiFrag(const int8_t*** multi_col_buffer
                                                 const int64_t* num_rows,
                                                 int64_t** out,
                                                 int32_t* matched_num,
-                                                int32_t* err_code) {
+                                                int32_t* err_code,
+                                                int64_t* init_agg_vals) {
   CiderExecutionKernelImpl* kernel = getImpl(this);
   return kernel->runWithDataMultiFrag(
-      multi_col_buffers, num_rows, out, matched_num, err_code);
+      multi_col_buffers, num_rows, out, matched_num, err_code, init_agg_vals);
 }
 
 void CiderExecutionKernel::runWithData(const int8_t** col_buffers,
                                        const int64_t* num_rows,
                                        int64_t** out,
                                        int32_t* matched_num,
-                                       int32_t* err_code) {
+                                       int32_t* err_code,
+                                       int64_t* init_agg_vals) {
   CiderExecutionKernelImpl* kernel = getImpl(this);
-  return kernel->runWithData(col_buffers, num_rows, out, matched_num, err_code);
+  return kernel->runWithData(col_buffers, num_rows, out, matched_num, err_code, init_agg_vals);
 }
 
 void CiderExecutionKernel::compileWorkUnit(

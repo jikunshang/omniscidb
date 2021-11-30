@@ -163,9 +163,14 @@ TEST(APITest, case1) {
   int64_t** out_buffers = build_out_buf();
   int32_t matched_num = 0;
   int32_t err_code = 0;
+  int64_t init_agg_vals = 0;
 
-  kernel->runWithData(
-      (const int8_t**)col_buffers, &num_rows, out_buffers, &matched_num, &err_code);
+  kernel->runWithData((const int8_t**)col_buffers,
+                      &num_rows,
+                      out_buffers,
+                      &matched_num,
+                      &err_code,
+                      &init_agg_vals);
 
   // check result
   std::cout << "total match " << matched_num << " rows" << std::endl;
