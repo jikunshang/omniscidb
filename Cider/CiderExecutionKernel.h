@@ -42,6 +42,8 @@ class CiderExecutionKernel {
   void compileWorkUnit(const RelAlgExecutionUnit& ra_exe_unit,
                        const std::vector<InputTableInfo>& query_infos);
 
+  virtual std::string getLlvmIR();
+
   static std::shared_ptr<CiderExecutionKernel> create();
 
  protected:

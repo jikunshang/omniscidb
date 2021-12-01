@@ -63,9 +63,12 @@ class CiderExecutionKernelImpl : public CiderExecutionKernel {
   void compileWorkUnit(const RelAlgExecutionUnit& ra_exe_unit,
                        const std::vector<InputTableInfo>& query_infos);
 
+  std::string getLlvmIR() override;
+
  private:
   std::shared_ptr<Executor> executor_;
   CompilationResult compilationResult_;
+  bool compiled = false;
 };
 
 void CiderExecutionKernelImpl::runWithDataMultiFrag(const int8_t*** multi_col_buffers,
@@ -80,7 +83,7 @@ void CiderExecutionKernelImpl::runWithDataMultiFrag(const int8_t*** multi_col_bu
   std::vector<int8_t> literal_vec =
       executor_->serializeLiterals(compilationResult_.literal_values, 0);
   uint64_t frag_row_offsets = 0;
-  int32_t max_matched = *num_rows;  // FIXME:
+  int32_t max_matched = *num_rows;          // FIXME:
   uint32_t num_tables = 1;                  // FIXME: only one table now, what about join
   int64_t* join_hash_tables_ptr = nullptr;  // FIXME:
 
@@ -121,8 +124,12 @@ void CiderExecutionKernelImpl::runWithData(const int8_t** col_buffers,
                                            int64_t* init_agg_vals) {
   const int8_t*** multi_col_buffers = (const int8_t***)std::malloc(sizeof(int8_t**) * 1);
   multi_col_buffers[0] = col_buffers;
-  runWithDataMultiFrag(
-      (const int8_t***)multi_col_buffers, num_rows, out, matched_num, err_code, init_agg_vals);
+  runWithDataMultiFrag((const int8_t***)multi_col_buffers,
+                       num_rows,
+                       out,
+                       matched_num,
+                       err_code,
+                       init_agg_vals);
   std::free(multi_col_buffers);
 }
 
@@ -161,6 +168,15 @@ void CiderExecutionKernelImpl::compileWorkUnit(
                                  column_cache,
                                  render_info);
   compilationResult_ = compilation_result;
+  compiled = true;
+}
+
+std::string CiderExecutionKernelImpl::getLlvmIR() {
+  if (compiled) {
+    return compilationResult_.llvm_ir;
+  } else {
+    return "";
+  }
 }
 
 void CiderExecutionKernel::runWithDataMultiFrag(const int8_t*** multi_col_buffers,
@@ -181,7 +197,8 @@ void CiderExecutionKernel::runWithData(const int8_t** col_buffers,
                                        int32_t* err_code,
                                        int64_t* init_agg_vals) {
   CiderExecutionKernelImpl* kernel = getImpl(this);
-  return kernel->runWithData(col_buffers, num_rows, out, matched_num, err_code, init_agg_vals);
+  return kernel->runWithData(
+      col_buffers, num_rows, out, matched_num, err_code, init_agg_vals);
 }
 
 void CiderExecutionKernel::compileWorkUnit(
@@ -194,4 +211,9 @@ void CiderExecutionKernel::compileWorkUnit(
 std::shared_ptr<CiderExecutionKernel> CiderExecutionKernel::create() {
   auto kernel = std::make_shared<CiderExecutionKernelImpl>();
   return kernel;
+}
+
+std::string CiderExecutionKernel::getLlvmIR() {
+  CiderExecutionKernelImpl* kernel = getImpl(this);
+  return kernel->getLlvmIR();
 }
