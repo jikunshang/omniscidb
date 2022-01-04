@@ -41,7 +41,10 @@ inline const CiderExecutionKernelImpl* getImpl(const CiderExecutionKernel* ptr) 
 
 class CiderExecutionKernelImpl : public CiderExecutionKernel {
  public:
-  ~CiderExecutionKernelImpl() {}
+  ~CiderExecutionKernelImpl() {
+    executor_.reset();
+  }
+
   CiderExecutionKernelImpl() {
     executor_ = Executor::getExecutor(Executor::UNITARY_EXECUTOR_ID);
   }
@@ -130,7 +133,7 @@ void CiderExecutionKernelImpl::runWithData(const int8_t** col_buffers,
                        matched_num,
                        err_code,
                        init_agg_vals);
-  std::free(multi_col_buffers);
+//  std::free(multi_col_buffers);
 }
 
 void CiderExecutionKernelImpl::compileWorkUnit(
