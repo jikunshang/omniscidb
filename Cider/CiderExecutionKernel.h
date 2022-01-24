@@ -22,6 +22,9 @@
 #include <QueryEngine/InputMetadata.h>
 #include <QueryEngine/RelAlgExecutionUnit.h>
 
+#include "CiderDataProvider.h"
+#include "CiderExecutionKernel.h"
+
 class CiderExecutionKernel {
  public:
   virtual ~CiderExecutionKernel(){};
@@ -44,9 +47,25 @@ class CiderExecutionKernel {
 
   virtual std::string getLlvmIR();
 
-  static std::shared_ptr<CiderExecutionKernel> create();
+  // todo: add PlanProvider, SchemaProvider
+  static std::shared_ptr<CiderExecutionKernel> create(
+      std::shared_ptr<CiderDataProvider>,
+      std::shared_ptr<CiderResultConvertor>);
+
+  void processBatch() {
+    // provider should have update input data
+    auto input = ciderDataProvider_->getData();
+
+    // todo: refactor runWithData
+    auto result = runWithData(input);
+
+    ciderResultConvertor_->update(result);
+    // ResultConvertor should convert to target format later.
+  }
 
  protected:
+  std::shared_ptr<CiderDataProvider> ciderDataProvider_;
+  std::shared_ptr<CiderResultConvertor> ciderResultConvertor_;
   CiderExecutionKernel(){};
   CiderExecutionKernel(const CiderExecutionKernel&) = delete;
   CiderExecutionKernel& operator=(const CiderExecutionKernel&) = delete;
