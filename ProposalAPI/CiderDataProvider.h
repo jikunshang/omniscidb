@@ -1,5 +1,4 @@
 /*
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,28 +15,30 @@
 #ifndef OMNISCI_CIDERDATAPROVIDER_H
 #define OMNISCI_CIDERDATAPROVIDER_H
 
-#include "DataConvertorInterface.h"
+#include "CiderInputConvertor.h"
 
 #include <memory>
 
 // This class may extend DataProvider class(if have) and override
+// todo: how but multiple input tables? could maintain multiple inputConvertor?
 class CiderDataProvider {
  public:
-  CiderDataProvider(std::shared_ptr<DataConvertorInterface> dataConvertor)
-      : dataConvertor_(dataConvertor) {}
+  CiderDataProvider(std::shared_ptr<CiderInputConvertor> inputConvertor)
+      : inputConvertor_(inputConvertor) {}
 
   // could be override method
   void fetchBuffer(const ChunkKey& key,
                    AbstractBuffer* destBuffer,
-                   const size_t numBytes = 0){};
+                   const size_t numBytes = 0){
+      // call getNextBatch() first
+      // and then do some conversion
+  };
 
   //
-  void getData(int8_t** output) {
-    dataConvertor_->getNextBatchData(output);
-  }
+  CiderTable getNextBatch() { return inputConvertor_->getNextBatch(); }
 
  private:
-  std::shared_ptr<DataConvertorInterface> dataConvertor_;
+  std::shared_ptr<CiderInputConvertor> inputConvertor_;
 };
 
 #endif  // OMNISCI_CIDERDATAPROVIDER_H

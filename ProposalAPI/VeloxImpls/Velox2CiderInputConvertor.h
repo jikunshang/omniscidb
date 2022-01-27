@@ -1,5 +1,4 @@
 /*
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,13 +12,26 @@
  * limitations under the License.
  */
 
-#ifndef OMNISCI_DATACONVERTORINTERFACE_H
-#define OMNISCI_DATACONVERTORINTERFACE_H
+#ifndef OMNISCI_VELOXDATACONVERTOR_H
+#define OMNISCI_VELOXDATACONVERTOR_H
 
-class DataConvertorInterface {
+#include "ProposalAPI/CiderInputConvertor.h"
+class Velox2CiderInputConvertor : public CiderInputConvertor {
  public:
-  // a 2-dimension table
-  void getNextBatchData(int8_t** ) = 0;
+  CiderTable getNextBatch() override { return ciderTable_; }
+
+  void addInput(RowVectorPtr input) {
+    // concern: Ownership?
+    data_ = std::move(input);
+    ciderTable_ = doConversion(data_);
+  }
+
+ private:
+  RowVectorPtr data_;
+  CiderTable doConversion(data_) {
+    // data_ -> output
+  }
+  CiderTable ciderTable_;
 };
 
-#endif  // OMNISCI_DATACONVERTORINTERFACE_H
+#endif  // OMNISCI_VELOXDATACONVERTOR_H
